@@ -18,7 +18,7 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/${_repo}/archive/refs/t
 sha256sums=('skip')
 
 package() {
-	install -Dm644 {{ .font }}    "${pkgdir}/usr/share/fonts/TTF/${_group}"
+	install -Dm644 {{ .font }} "${pkgdir}/usr/share/fonts/TTF/${_group}"
 	install -Dm644 {{ .license }} "${pkgdir}/usr/share/licenses/${pkgname}/"
 }
 
