@@ -1,13 +1,13 @@
 env:
-  LANDING_URL:         'https://fonts.google.com/specimen/Cantora+One'
-  SRC_URL:             'https://fonts.google.com/download?family=Cantora%20One'
-  FONT_FILE:           'CantoraOne-Regular.ttf'
-  LICENSE_FILE:        'OFL.txt'
-  PKGBUILD_FILE:       'PKGBUILD'
-  FONT_DIR:            'font'
-  PKGBUILD_TEMPLATE:   '.github/assets/PKGBUILD.template'
-  CHECKSUM_FILE:       '.github/assets/sha256sum'
-  COMMIT_MESSAGE:      'update font'
+  LANDING_URL:         https://fonts.google.com/specimen/Cantora+One
+  SRC_URL:             https://fonts.google.com/download?family=Cantora%20One
+  FONT_FILE:           CantoraOne-Regular.ttf
+  LICENSE_FILE:        OFL.txt
+  PKGBUILD_FILE:       PKGBUILD
+  FONT_DIR:            font
+  PKGBUILD_TEMPLATE:   .github/assets/PKGBUILD.template
+  CHECKSUM_FILE:       .github/assets/sha256sum
+  COMMIT_MESSAGE:      update font
 
 on:
   workflow_dispatch:
@@ -29,10 +29,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - run: curl -fsSL "$SRC_URL" | sha256sum | awk '{ print "NEWSUM=" $1 }' >> $GITHUB_ENV
+      - run: curl -fsSL "$SRC_URL" | sha256sum | awk '{ print "NEWSUM=" $1 }' >> "$GITHUB_ENV"
       - run: |
           [[ -f $CHECKSUM_FILE ]] && [[ $NEWSUM == $(<"$CHECKSUM_FILE") ]] && updated=false || updated=true
-          echo "updated=$updated" >> $GITHUB_OUTPUT
+          echo "updated=$updated" >> "$GITHUB_OUTPUT"
         id: check
 
     outputs:
@@ -49,8 +49,8 @@ jobs:
 
     steps:
 
-      - run: printf 'TMPDIR=%s\n' $(mktemp -udp${{ runner.temp }}) >> $GITHUB_ENV
-      - run: date --utc '+VERSION=%Y.%m.%d.%H%M%S' >> $GITHUB_ENV
+      - run: printf 'TMPDIR=%s\n' $(mktemp -udp"$RUNNER_TEMP") >> "$GITHUB_ENV"
+      - run: date --utc '+VERSION=%Y.%m.%d.%H%M%S' >> "$GITHUB_ENV"
       - run: mkdir -p "$TMPDIR"
       - run: sudo apt-get install -y libarchive-tools
       - run: curl -fsSL "$SRC_URL" | bsdtar -xC"$TMPDIR"
@@ -80,4 +80,4 @@ jobs:
 
       - uses: ncipollo/release-action@v1.11.2
         with:
-          tag:   ${{ env.VERSION }}
+          tag: ${{ env.VERSION }}
