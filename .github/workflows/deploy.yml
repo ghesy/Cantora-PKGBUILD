@@ -1,4 +1,6 @@
 env:
+
+  # config
   LANDING_URL:         https://fonts.google.com/specimen/Cantora+One
   SRC_URL:             https://fonts.google.com/download?family=Cantora%20One
   FONT_FILE:           CantoraOne-Regular.ttf
@@ -9,6 +11,11 @@ env:
   CHECKSUM_FILE:       .github/assets/sha256sum
   COMMIT_MESSAGE:      update font
 
+  # command aliases
+  MKTMP: mktemp -dp"$RUNNER_TEMP" | awk '{ print "TMPDIR=" $1 }' >> "$GITHUB_ENV"
+
+# ========================
+
 on:
   workflow_dispatch:
   schedule:
@@ -17,18 +24,19 @@ on:
     branches: master
     paths: [ .github/** ]
 
+# ========================
+
 defaults:
   run:
     # explicitly set shell to bash to enable pipefail
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
     shell: bash
 
-aliases:
-  mktemp: &mktemp mktemp -dp"$RUNNER_TEMP" | awk '{ print "TMPDIR=" $1 }' >> "$GITHUB_ENV"
+# ========================
 
-# ====================
 jobs:
-# ====================
+
+  # ========
 
   check:
     runs-on: ubuntu-latest
@@ -44,7 +52,7 @@ jobs:
           echo "updated=$updated" >> "$GITHUB_OUTPUT"
         id: check
 
-# ====================
+  # ========
 
   update:
     runs-on: ubuntu-latest
@@ -55,7 +63,7 @@ jobs:
 
     steps:
 
-      - run: *mktemp
+      - run: ${{ env.MKTMP }}
       - run: date --utc '+VERSION=%Y.%m.%d.%H%M%S' >> "$GITHUB_ENV"
       - run: sudo apt-get install -y libarchive-tools
       - run: curl -fsSL "$SRC_URL" | bsdtar -xC"$TMPDIR"
@@ -90,7 +98,7 @@ jobs:
         with:
           tag: ${{ env.VERSION }}
 
-# ====================
+  # ========
 
   test:
     runs-on: ubuntu-latest
@@ -98,12 +106,13 @@ jobs:
     needs: update
 
     steps:
-      - run: *mktemp
+      - run: ${{ env.MKTMP }}
       - run: cp "$PKGBUILD_FILE" "$TMPDIR"
       - run: pacman -Syu --needed --noconfirm devtools
       - run: extra-x86_64-build
+        working-directory: ${{ env.TMPDIR }}
 
-# ====================
+  # ========
 
   cleanup:
     runs-on: ubuntu-latest
@@ -113,5 +122,5 @@ jobs:
     steps:
       - uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
-        delete_release: true
-        tag_name: ${{ needs.update.outputs.version }}
+          delete_release: true
+          tag_name: ${{ needs.update.outputs.version }}
