@@ -8,7 +8,7 @@ conflicts=("$_pkgname")
 
 pkgname=${_pkgname}-latest
 pkgdesc='Cantora is a friendly semi-formal, semi-condensed, semi-sans-serif font from Pablo Impallari.'
-pkgver=2022.12.03.004908
+pkgver=2022.12.03.005632
 pkgrel=1
 url='https://fonts.google.com/specimen/Cantora+One'
 arch=('any')
