@@ -8,7 +8,7 @@ conflicts=("$_pkgname")
 
 pkgname=${_pkgname}-latest
 pkgdesc='Cantora is a friendly semi-formal, semi-condensed, semi-sans-serif font from Pablo Impallari.'
-pkgver=2022.12.03.005632
+pkgver=2022.12.03.010817
 pkgrel=1
 url='https://fonts.google.com/specimen/Cantora+One'
 arch=('any')
@@ -18,7 +18,7 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/${_repo}/archive/refs/t
 sha256sums=('skip')
 
 package() {
-	install -Dm644 CantoraOne-Regular.ttf    "${pkgdir}/usr/share/fonts/TTF/${_group}"
+	install -Dm644 CantoraOne-Regular.ttf "${pkgdir}/usr/share/fonts/TTF/${_group}"
 	install -Dm644 OFL.txt "${pkgdir}/usr/share/licenses/${pkgname}/"
 }
 
