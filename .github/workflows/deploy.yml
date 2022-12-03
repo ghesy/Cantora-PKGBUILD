@@ -80,4 +80,3 @@ jobs:
       - uses: ncipollo/release-action@v1.11.2
         with:
           tag:   ${{ env.VERSION }}
-          body:  ${{ env.VERSION }}
