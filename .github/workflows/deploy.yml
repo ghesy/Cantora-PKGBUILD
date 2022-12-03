@@ -1,0 +1,83 @@
+env:
+  LANDING_URL:         'https://fonts.google.com/specimen/Cantora+One'
+  SRC_URL:             'https://fonts.google.com/download?family=Cantora%20One'
+  FONT_FILE:           'CantoraOne-Regular.ttf'
+  LICENSE_FILE:        'OFL.txt'
+  PKGBUILD_TEMPLATE:   'PKGBUILD.template'
+  PKGBUILD_FILE:       'PKGBUILD'
+  CHECKSUM_FILE:       'sha256sum'
+  FONT_DIR:            'font'
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * *
+
+defaults:
+  run:
+    # explicitly set shell to bash to enable pipefail
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
+    shell: bash
+
+jobs:
+
+# ====================
+
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - run: curl -fsSL "$SRC_URL" | sha256sum | awk '{ print "NEWSUM=" $1 }' >> $GITHUB_ENV
+      - run: |
+          [[ -f $CHECKSUM_FILE ]] && [[ $NEWSUM == $(<"$CHECKSUM_FILE") ]] && updated=false || updated=true
+          echo "updated=$updated" >> $GITHUB_OUTPUT
+        id: check
+
+    outputs:
+      updated:  ${{ steps.check.outputs.updated }}
+      checksum: ${{ env.NEWSUM }}
+
+# ====================
+
+  update:
+    runs-on: ubuntu-latest
+
+    needs: check
+    if: ${{ needs.check.outputs.updated == 'true' }}
+
+    steps:
+
+      - run: printf 'TMPDIR=%s\n' $(mktemp -udp${{ runner.temp }}) >> $GITHUB_ENV
+      - run: date --utc '+VERSION=%Y.%m.%d.%H%M%S' >> $GITHUB_ENV
+      - run: mkdir -p "$TMPDIR"
+      - run: sudo apt-get install -y libarchive-tools
+      - run: curl -fsSL "$SRC_URL" | bsdtar -xC"$TMPDIR"
+      - run: test -f "$TMPDIR/$FONT_FILE"
+      - run: test -f "$TMPDIR/$LICENSE_FILE"
+      - uses: actions/checkout@v3
+      - run: rm -rf "$FONT_DIR"
+      - run: mv -T "$TMPDIR" "$FONT_DIR"
+      - run: echo '${{ needs.check.outputs.checksum }}' > "$CHECKSUM_FILE"
+
+      - uses: chuhlomin/render-template@v1.6
+        with:
+          template:     ${{ env.PKGBUILD_TEMPLATE }}
+          result_path:  ${{ env.PKGBUILD_FILE }}
+          vars: |
+            repo:       ${{ github.repository }}
+            version:    ${{ env.VERSION }}
+            url:        ${{ env.LANDING_URL }}
+            font:       ${{ env.FONT_FILE }}
+            license:    ${{ env.LICENSE_FILE }}
+
+      - uses: EndBug/add-and-commit@v9
+        id: commit
+        with:
+          add: ${{ env.FONT_DIR }}/* ${{ env.PKGBUILD_FILE }} ${{ env.CHECKSUM_FILE }}
+          message: 'update files'
+
+      - uses: ncipollo/release-action@v1.11.2
+        with:
+          tag:   ${{ env.VERSION }}
+          body:  ${{ env.VERSION }}
