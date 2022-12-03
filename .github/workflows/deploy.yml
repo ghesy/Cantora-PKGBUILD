@@ -14,10 +14,8 @@ on:
   schedule:
     - cron: 0 0 * * *
   push:
-    branches:
-      - master
-    paths:
-      - .github/**
+    branches: master
+    paths: [ .github/** ]
 
 defaults:
   run:
@@ -25,12 +23,18 @@ defaults:
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
     shell: bash
 
-jobs:
+aliases:
+  mktemp: &mktemp mktemp -dp"$RUNNER_TEMP" | awk '{ print "TMPDIR=" $1 }' >> "$GITHUB_ENV"
 
+# ====================
+jobs:
 # ====================
 
   check:
     runs-on: ubuntu-latest
+    outputs:
+      updated:  ${{ steps.check.outputs.updated }}
+      checksum: ${{ env.NEWSUM }}
 
     steps:
       - uses: actions/checkout@v3
@@ -40,23 +44,19 @@ jobs:
           echo "updated=$updated" >> "$GITHUB_OUTPUT"
         id: check
 
-    outputs:
-      updated:  ${{ steps.check.outputs.updated }}
-      checksum: ${{ env.NEWSUM }}
-
 # ====================
 
   update:
     runs-on: ubuntu-latest
-
     needs: check
     if: ${{ needs.check.outputs.updated == 'true' }}
+    outputs:
+      version: ${{ env.VERSION }}
 
     steps:
 
-      - run: printf 'TMPDIR=%s\n' $(mktemp -udp"$RUNNER_TEMP") >> "$GITHUB_ENV"
+      - run: *mktemp
       - run: date --utc '+VERSION=%Y.%m.%d.%H%M%S' >> "$GITHUB_ENV"
-      - run: mkdir -p "$TMPDIR"
       - run: sudo apt-get install -y libarchive-tools
       - run: curl -fsSL "$SRC_URL" | bsdtar -xC"$TMPDIR"
       - run: test -f "$TMPDIR/$FONT_FILE"
@@ -80,9 +80,38 @@ jobs:
       - uses: EndBug/add-and-commit@v9
         id: commit
         with:
-          add: ${{ env.FONT_DIR }}/* ${{ env.PKGBUILD_FILE }} ${{ env.CHECKSUM_FILE }}
           message: ${{ env.COMMIT_MESSAGE }}
+          add: |
+            ${{ env.FONT_DIR }}/*
+            ${{ env.PKGBUILD_FILE }}
+            ${{ env.CHECKSUM_FILE }}
 
       - uses: ncipollo/release-action@v1.11.2
         with:
           tag: ${{ env.VERSION }}
+
+# ====================
+
+  test:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    needs: update
+
+    steps:
+      - run: *mktemp
+      - run: cp "$PKGBUILD_FILE" "$TMPDIR"
+      - run: pacman -Syu --needed --noconfirm devtools
+      - run: extra-x86_64-build
+
+# ====================
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: update, test
+    if: ${{ failure() }}
+
+    steps:
+      - uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+        delete_release: true
+        tag_name: ${{ needs.update.outputs.version }}
