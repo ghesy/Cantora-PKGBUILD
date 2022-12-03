@@ -5,8 +5,8 @@ env:
   LICENSE_FILE:        'OFL.txt'
   PKGBUILD_FILE:       'PKGBUILD'
   FONT_DIR:            'font'
-  PKGBUILD_TEMPLATE:   '.github/workflows/PKGBUILD.template'
-  CHECKSUM_FILE:       '.github/workflows/sha256sum'
+  PKGBUILD_TEMPLATE:   '.github/assets/PKGBUILD.template'
+  CHECKSUM_FILE:       '.github/assets/sha256sum'
   COMMIT_MESSAGE:      'update font'
 
 on:
